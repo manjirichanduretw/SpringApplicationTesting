@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -82,6 +83,28 @@ public class UserControllerWebLayerTest {
         Assertions.assertNotNull(createdUser.getUserId(), "UderId is not set!");
 
 
+    }
+
+    @Test
+    @DisplayName("When Empty firstName provided should return 400 Bad-Request")
+    void testUserCreate_whenEmptyFirstNameProvided_thenShouldReturn400Badrequest() throws Exception {
+
+        UserDetailsRequestModel userDetailsRequestModel = new UserDetailsRequestModel();
+        userDetailsRequestModel.setFirstName("");
+        userDetailsRequestModel.setLastName("Chandure");
+        userDetailsRequestModel.setEmail("email@gmail.com");
+        userDetailsRequestModel.setPassword("12345678");
+        userDetailsRequestModel.setRepeatPassword("12345678");
+
+        RequestBuilder requestBuilder = MockMvcRequestBuilders.post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(userDetailsRequestModel));
+
+        MvcResult mvcResult = mockMvc.perform(requestBuilder).andReturn();
+
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST.value(), mvcResult.getResponse().getStatus(),
+                "Should return 400 bad-request");
     }
 
 }
