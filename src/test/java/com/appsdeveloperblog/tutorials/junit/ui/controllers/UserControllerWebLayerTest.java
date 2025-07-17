@@ -4,10 +4,9 @@ import com.appsdeveloperblog.tutorials.junit.service.UsersService;
 import com.appsdeveloperblog.tutorials.junit.shared.UserDto;
 import com.appsdeveloperblog.tutorials.junit.ui.request.UserDetailsRequestModel;
 import com.appsdeveloperblog.tutorials.junit.ui.response.UserRest;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hibernate.mapping.Any;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
@@ -31,22 +30,29 @@ import static org.mockito.Mockito.when;
 excludeAutoConfiguration = {SecurityAutoConfiguration.class})
 public class UserControllerWebLayerTest {
 
+    UserDetailsRequestModel userDetailsRequestModel;
+
     @Autowired
     MockMvc mockMvc;
 
     @MockBean
     UsersService usersService;
 
-    @Test
-    @DisplayName("Create User when valid user detail provided!")
-    void testCreateUser_whenValidUserDetailsProvided_thenCreateUser() throws Exception {
-//        Arrange
-        UserDetailsRequestModel userDetailsRequestModel = new UserDetailsRequestModel();
+    @BeforeEach
+    void init(){
+
+        userDetailsRequestModel = new UserDetailsRequestModel();
         userDetailsRequestModel.setFirstName("Manjiri");
         userDetailsRequestModel.setLastName("Chandure");
         userDetailsRequestModel.setEmail("email@gmail.com");
         userDetailsRequestModel.setPassword("12345678");
         userDetailsRequestModel.setRepeatPassword("12345678");
+    }
+
+    @Test
+    @DisplayName("Create User when valid user detail provided!")
+    void testCreateUser_whenValidUserDetailsProvided_thenCreateUser() throws Exception {
+//        Arrange
 
         RequestBuilder requestBuilder = MockMvcRequestBuilders.post("/users")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -89,12 +95,7 @@ public class UserControllerWebLayerTest {
     @DisplayName("When Empty firstName provided should return 400 Bad-Request")
     void testUserCreate_whenEmptyFirstNameProvided_thenShouldReturn400Badrequest() throws Exception {
 
-        UserDetailsRequestModel userDetailsRequestModel = new UserDetailsRequestModel();
         userDetailsRequestModel.setFirstName("");
-        userDetailsRequestModel.setLastName("Chandure");
-        userDetailsRequestModel.setEmail("email@gmail.com");
-        userDetailsRequestModel.setPassword("12345678");
-        userDetailsRequestModel.setRepeatPassword("12345678");
 
         RequestBuilder requestBuilder = MockMvcRequestBuilders.post("/users")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -105,6 +106,23 @@ public class UserControllerWebLayerTest {
 
         Assertions.assertEquals(HttpStatus.BAD_REQUEST.value(), mvcResult.getResponse().getStatus(),
                 "Should return 400 bad-request");
+    }
+
+    @Test
+    @DisplayName("When firstName is shorter than min limit(2 character)")
+    void testUserCreate_whenFirstNameLengthShorterThan2Char_thenReturn400BadRequest() throws Exception {
+
+        userDetailsRequestModel.setFirstName("m");
+
+        RequestBuilder requestBuilder = MockMvcRequestBuilders.post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(userDetailsRequestModel));
+
+        MvcResult mvcResult = mockMvc.perform(requestBuilder).andReturn();
+
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST.value(), mvcResult.getResponse().getStatus(),
+                "First name should be greater than 2 character!");
     }
 
 }
