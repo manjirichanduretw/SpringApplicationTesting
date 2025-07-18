@@ -1,23 +1,25 @@
 package com.appsdeveloperblog.tutorials.junit.ui.controllers;
 
+import com.appsdeveloperblog.tutorials.junit.security.SecurityConstants;
 import com.appsdeveloperblog.tutorials.junit.ui.response.UserRest;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import java.util.Arrays;
+import java.util.List;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 //properties = {"server.port = 8081", "hostname=192.168.0.2"})
 //@TestPropertySource(locations = "/application-test.properties",
 //properties = "server.port=8888")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserControllerIntegrationTest {
 
     @Autowired
@@ -33,6 +35,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     @DisplayName("Integration test for creating user")
+    @Order(1)
     void testUserCreate_whenValidUserDetailsProvided_thenUserShouldCreated() throws JSONException {
 //        Arrange
         JSONObject userDetailsRequestJSON = new JSONObject();
@@ -63,4 +66,47 @@ public class UserControllerIntegrationTest {
 
     }
 
+    @Test
+    @DisplayName("Should return 403 when jwt token is missing")
+    @Order(2)
+    void testGetUsers_whenJWTMissing_thenShouldReturn403(){
+//        Arrange
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept", "application/json");
+
+        HttpEntity requestEntity = new HttpEntity(null, headers);
+
+//        Act
+        ResponseEntity<List<UserRest>> response = testRestTemplate.exchange("/users",
+                HttpMethod.GET,
+                requestEntity,
+                new ParameterizedTypeReference<List<UserRest>>() {
+                });
+//        Assert
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode(), "Should return 403!");
+    }
+
+    @Test
+    @DisplayName("User Login works")
+    @Order(3)
+    void testUserLogin_whenCorrectCredentialsProvided_UserShouldGetLoggedIn() throws JSONException {
+//          Arrange
+        JSONObject loginCredentials = new JSONObject();
+        loginCredentials.put("email", "manjiri@gmail.com");
+        loginCredentials.put("password", "12345678");
+
+        HttpEntity<String> request = new HttpEntity<>(loginCredentials.toString());
+
+//        Act
+        ResponseEntity response = testRestTemplate.postForEntity("/users/login",
+                request, null);
+
+//        Assert
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode(),
+                "Should return 200 Ok");
+        Assertions.assertNotNull(response.getHeaders().getValuesAsList(SecurityConstants.HEADER_STRING).get(0),
+                "response should contain Authorization header!");
+        Assertions.assertNotNull(response.getHeaders().getValuesAsList("UserId").get(0),
+                "response should contain userId in response");
+    }
 }
