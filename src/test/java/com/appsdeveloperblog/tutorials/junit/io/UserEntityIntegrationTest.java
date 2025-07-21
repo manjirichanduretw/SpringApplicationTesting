@@ -1,12 +1,14 @@
 package com.appsdeveloperblog.tutorials.junit.io;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
+import javax.persistence.PersistenceException;
 import java.util.UUID;
 
 @DataJpaTest
@@ -14,17 +16,22 @@ public class UserEntityIntegrationTest {
     @Autowired
     TestEntityManager testEntityManager;
 
-    @DisplayName("test UserEntity")
-    @Test
-    void testUserEntity_whenCorrectUserDetailsProvided_thenShouldReturnStoredUserDetails(){
-//        Arrange
-        UserEntity userEntity = new UserEntity();
+    UserEntity userEntity;
+
+    @BeforeEach
+    void init(){
+        userEntity = new UserEntity();
         userEntity.setUserId(UUID.randomUUID().toString());
         userEntity.setFirstName("Manjiri");
         userEntity.setLastName("Chandure");
         userEntity.setEmail("chanduremanjiri@gmail.com");
         userEntity.setEncryptedPassword("12345678");
+    }
 
+    @DisplayName("test UserEntity")
+    @Test
+    void testUserEntity_whenCorrectUserDetailsProvided_thenShouldReturnStoredUserDetails(){
+//        Arrange
 //        act
         UserEntity storedUser = testEntityManager.persistAndFlush(userEntity);
 
@@ -37,5 +44,16 @@ public class UserEntityIntegrationTest {
         Assertions.assertEquals(userEntity.getEmail(), storedUser.getEmail());
         Assertions.assertEquals(userEntity.getEncryptedPassword(), storedUser.getEncryptedPassword());
 
+    }
+
+    @DisplayName("test too long firstName returns exception")
+    @Test
+    void testUserEntity_whenTooLongFirstNameIsProvided_thenReturnException(){
+//        Arrange
+        userEntity.setFirstName("Manjiri123Manjiri123Manjiri123Manjiri123Manjiri123M");
+//        Act & assert
+        Assertions.assertThrows(PersistenceException.class, ()->{
+            testEntityManager.persistAndFlush(userEntity);
+        }, "When firstName is tooLong should return persistence exception");
     }
 }
