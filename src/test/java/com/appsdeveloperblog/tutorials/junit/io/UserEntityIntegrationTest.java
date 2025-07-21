@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import javax.persistence.PersistenceException;
+import java.sql.SQLOutput;
 import java.util.UUID;
 
 @DataJpaTest
@@ -55,5 +56,24 @@ public class UserEntityIntegrationTest {
         Assertions.assertThrows(PersistenceException.class, ()->{
             testEntityManager.persistAndFlush(userEntity);
         }, "When firstName is tooLong should return persistence exception");
+    }
+
+    @DisplayName("UserEntity should return exception when duplicate userId provided")
+    @Test
+    void testUserEntity_whenDuplicationUserIdProvided_thenReturnException(){
+//Arrange
+        UserEntity duplicateIdUserEntity = new UserEntity();
+        duplicateIdUserEntity.setUserId(userEntity.getUserId());
+        duplicateIdUserEntity.setFirstName("Manji");
+        duplicateIdUserEntity.setLastName("Chandure");
+        duplicateIdUserEntity.setEmail("chanduremanjiri@gmail.com");
+        duplicateIdUserEntity.setEncryptedPassword("12345678");
+
+        testEntityManager.persistAndFlush(userEntity);
+//Act & Assert
+        Assertions.assertThrows(PersistenceException.class, ()->{
+            testEntityManager.persistAndFlush(duplicateIdUserEntity);
+        }, "should return persistence exception when duplicate userId provided");
+
     }
 }
